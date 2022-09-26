@@ -45,6 +45,6 @@ jobs:
           prerelease: false
           automatic_release_tag: "latest"
           files: |
-            LICENSE.txt
+            LICENSE
             bin/Release/net6.0/SimpleDependencyInjection.dll
             bin/Release/net6.0/SimpleDependencyInjection.xml
