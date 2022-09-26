@@ -13,6 +13,7 @@
     <EnforceCodeStyleInBuild>False</EnforceCodeStyleInBuild>
     <AnalysisLevel>latest</AnalysisLevel>
     <Authors>Matyáš Holub</Authors>
+	<OutputType>Library</OutputType>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
