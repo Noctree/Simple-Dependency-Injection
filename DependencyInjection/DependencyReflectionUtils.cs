@@ -35,7 +35,7 @@ public static class DependencyReflectionUtils
         foreach (var field in injectedFields)
             fieldInfo.Add(new FieldInjectionInfo(field.FieldType, field));
         foreach (var prop in injectedProps)
-            propInfo.Add(new PropertyInjectionInfo(prop.PropertyType, prop.GetSetMethod(true)));
+            propInfo.Add(new PropertyInjectionInfo(prop.PropertyType, prop.GetSetMethod(true) ?? throw new MissingMethodException(type.FullName, prop.Name + ".get()")));
         return (fieldInfo.ToArray(), propInfo.ToArray());
     }
 }

@@ -25,7 +25,7 @@ public static class DependencyInjector
 
     public static bool IsDependencyRegistered<T>(T _) where T : class => IsDependencyRegistered<T>();
     public static bool IsDependencyRegistered<T>() where T : class => Dependencies.ContainsKey(typeof(T));
-    public static bool ResolveDependencies<T>(T instance) => ResolveDependencies(instance, typeof(T));
+    public static bool ResolveDependencies<T>(T instance) where T : notnull => ResolveDependencies(instance, typeof(T));
 
     public static bool ResolveDependencies(object instance, Type type) {
         if (!type.IsClass) {
@@ -46,6 +46,7 @@ public static class DependencyInjector
                 else
                     throw new DependencyNotRegisteredException(fieldInjInfo.DependencyType, type);
                 success = false;
+                continue;
             }
             fieldInjInfo.Info.SetValue(instance, dependency);
         }
@@ -56,6 +57,7 @@ public static class DependencyInjector
                 else
                     throw new DependencyNotRegisteredException(propInjInfo.DependencyType, type);
                 success = false;
+                continue;
             }
             argArr[0] = dependency;
             propInjInfo.Setter.Invoke(instance, argArr);

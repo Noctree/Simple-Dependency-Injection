@@ -7,6 +7,7 @@ public sealed class TypeAlreadyRegisteredException : ArgumentException
 {
     public Type InstanceType { get; }
     public TypeAlreadyRegisteredException() : base() {
+        InstanceType = typeof(object);
     }
 
     public TypeAlreadyRegisteredException(Type instanceType) : base($"Instance of type {instanceType.FullName} is already registered") {

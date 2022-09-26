@@ -7,21 +7,22 @@
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <SignAssembly>False</SignAssembly>
     <ErrorReport>none</ErrorReport>
-    <Title>SimpleDependencyInjection</Title>
+    <Title>Simple Dependency Injection</Title>
     <RepositoryUrl>https://github.com/Noctree/Simple-Dependency-Injection</RepositoryUrl>
     <PackageProjectUrl>https://github.com/Noctree/Simple-Dependency-Injection</PackageProjectUrl>
     <EnforceCodeStyleInBuild>False</EnforceCodeStyleInBuild>
     <AnalysisLevel>latest</AnalysisLevel>
+    <Authors>Matyáš Holub</Authors>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <WarningLevel>7</WarningLevel>
-    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
+    <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <WarningLevel>7</WarningLevel>
-    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
+    <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
     <Optimize>True</Optimize>
   </PropertyGroup>
 
