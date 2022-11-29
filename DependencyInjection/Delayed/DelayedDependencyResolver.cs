@@ -1,47 +1,52 @@
 ﻿using System;
 using System.Collections.Generic;
-using NokLib.DependencyInjection.Exceptions;
+using SimpleDI.Scopes;
 
-namespace NokLib.DependencyInjection.Internal;
+namespace SimpleDI.Internal;
 
-public static class DelayedDependencyResolver
+internal sealed class DelayedDependencyResolver
 {
-    private record struct DelayedTargetInfo(HashSet<IDelayedDependencyInjection> Targets, HashSet<Type> Dependencies);
-    private static Dictionary<Type, DelayedTargetInfo> WaitingTargets = new();
-    private static Dictionary<Type, HashSet<Type>> WaitingDependencies = new();
+    private readonly Scope _owner;
+    private readonly Dictionary<Type, DelayedTargetInfo> _waitingTargets = new();
+    private readonly Dictionary<Type, HashSet<Type>> _waitingDependencies = new();
 
-    public static void AddAwaitingTarget(object instance, Type instanceType, Type awaitingDependencyType) {
+    public DelayedDependencyResolver(Scope owner)
+    {
+        _owner = owner;
+    }
+
+    public void AddAwaitingTarget(object instance, Type instanceType, Type awaitingDependencyType) {
         if (instance is not IDelayedDependencyInjection instanceDelayedDI) {
             throw new DITypeNotSupportedException(instanceType);
         }
-        if (!WaitingTargets.TryGetValue(instanceType, out var awaitingTargets)) {
+        if (!_waitingTargets.TryGetValue(instanceType, out var awaitingTargets)) {
             awaitingTargets = new() { Dependencies = new(), Targets = new() };
-            WaitingTargets.Add(instanceType, awaitingTargets);
+            _waitingTargets.Add(instanceType, awaitingTargets);
         }
         awaitingTargets.Targets.Add(instanceDelayedDI);
         awaitingTargets.Dependencies.Add(awaitingDependencyType);
-        if (!WaitingDependencies.TryGetValue(awaitingDependencyType, out var dependencies)) {
+        if (!_waitingDependencies.TryGetValue(awaitingDependencyType, out var dependencies)) {
             dependencies = new();
-            WaitingDependencies.Add(awaitingDependencyType, dependencies);
+            _waitingDependencies.Add(awaitingDependencyType, dependencies);
         }
         dependencies.Add(instanceType);
     }
 
-    public static void AddResolvedDependency(Type resolvedType) {
-        if (!WaitingDependencies.TryGetValue(resolvedType, out var awaitingTargetTypes))
+    public void AddResolvedDependency(Type resolvedType) {
+        if (!_waitingDependencies.TryGetValue(resolvedType, out var awaitingTargetTypes))
             return;
         foreach (var awaitingType in awaitingTargetTypes) {
-            if (WaitingTargets.TryGetValue(awaitingType, out var targets)) {
+            if (_waitingTargets.TryGetValue(awaitingType, out var targets)) {
                 targets.Dependencies.Remove(resolvedType);
                 if (targets.Dependencies.Count == 0) {
                     foreach (var target in targets.Targets) {
-                        DependencyInjector.ResolveDependencies(target, awaitingType);
+                        _owner.ResolveDependencies(target);
                         target.OnDependenciesInjected();
                     }
-                    WaitingTargets.Remove(awaitingType);
+                    _waitingTargets.Remove(awaitingType);
                 }
             }
         }
-        WaitingDependencies.Remove(resolvedType);
+        _waitingDependencies.Remove(resolvedType);
     }
 }

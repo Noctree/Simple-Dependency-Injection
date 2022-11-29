@@ -1,67 +1,100 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
-using NokLib.DependencyInjection.Exceptions;
-using NokLib.DependencyInjection.Internal;
+using SimpleDI.Scopes;
+using SimpleDI.Internal;
+using System.Diagnostics.CodeAnalysis;
 
-namespace NokLib.DependencyInjection;
+namespace SimpleDI;
 
-public readonly record struct FieldInjectionInfo(Type DependencyType, FieldInfo Info);
-public readonly record struct PropertyInjectionInfo(Type DependencyType, MethodInfo Setter);
-public sealed record ObjectInjectionInfo(FieldInjectionInfo[] FieldInjectionInfo, PropertyInjectionInfo[] PropertyInjectionInfo);
 public static class DependencyInjector
 {
-    private static readonly object[] argArr = new object[1];
-    private static readonly Dictionary<Type, object> Dependencies = new();
-    private static readonly Dictionary<Type, ObjectInjectionInfo> InjectionInfo = new();
-    public static void RegisterDependency<T>(T instance) where T : class {
-        if (IsDependencyRegistered<T>())
-            throw new TypeAlreadyRegisteredException(typeof(T), nameof(instance));
-        Dependencies.Add(typeof(T), instance);
-        DelayedDependencyResolver.AddResolvedDependency(typeof(T));
-    }
+    internal const string GlobalScopeId = "global-scope";
+    private static readonly Scope _globalScope = new(GlobalScopeId, null);
+    private static readonly Dictionary<string, Scope> _scopes = new();
 
-    public static void UnregisterDependency<T>() where T : class => Dependencies.Remove(typeof(T));
+    /// <summary>
+    /// Register an instance of an object as the dependency instance for it's type. <br/> <b>This method applies for the global scope</b>
+    /// </summary>
+    /// <typeparam name="T">Type of the dependency</typeparam>
+    /// <param name="instance">Instance to resolve any dependency for this type to</param>
+    public static void RegisterDependency<T>(T instance) where T : class =>
+        _globalScope.RegisterDependency(instance);
 
+    /// <summary>
+    /// Unregisters any instance of this type from the scope <br/> <b>This method applies for the global scope</b>
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="_"></param>
+    public static void UnregisterDependency<T>(T _) where T : class =>
+        UnregisterDependency<T>();
+
+    /// <summary>
+    /// Unregisters any instance of this type from the scope <br/> <b>This method applies for the global scope</b>
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public static void UnregisterDependency<T>() where T : class =>
+        _globalScope.UnregisterDependency<T>();
+
+    /// <summary>
+    /// Check if a dependency instance for type <typeparamref name="T"/> is registered <br/> <b>This method applies for the global scope</b>
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="_"></param>
+    /// <returns>True if an instance for type <typeparamref name="T"/> is registered</returns>
     public static bool IsDependencyRegistered<T>(T _) where T : class => IsDependencyRegistered<T>();
-    public static bool IsDependencyRegistered<T>() where T : class => Dependencies.ContainsKey(typeof(T));
-    public static bool ResolveDependencies<T>(T instance) where T : notnull => ResolveDependencies(instance, typeof(T));
 
-    public static bool ResolveDependencies(object instance, Type type) {
-        if (!type.IsClass) {
-            throw new DITypeNotSupportedException(type);
-        }
+    /// <summary>
+    /// Check if a dependency instance for type <typeparamref name="T"/> is registered <br/> <b>This method applies for the global scope</b>
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <returns>True if an instance for type <typeparamref name="T"/> is registered</returns>
+    public static bool IsDependencyRegistered<T>() where T : class => _globalScope.IsDependencyRegistered(typeof(T));
 
-        if (!InjectionInfo.ContainsKey(type)) {
-            var injInfo = DependencyReflectionUtils.GenerateInjectionInfoForType(type);
-            InjectionInfo.Add(type, new(injInfo.Item1, injInfo.Item2));
-        }
-        var objectInjectionInfo = InjectionInfo[type];
-        bool success = true;
-        IDelayedDependencyInjection? delayedObject = instance as IDelayedDependencyInjection;
-        foreach (var fieldInjInfo in objectInjectionInfo.FieldInjectionInfo) {
-            if (!Dependencies.TryGetValue(fieldInjInfo.DependencyType, out var dependency)) {
-                if (delayedObject is not null)
-                    DelayedDependencyResolver.AddAwaitingTarget(delayedObject, type, fieldInjInfo.DependencyType);
-                else
-                    throw new DependencyNotRegisteredException(fieldInjInfo.DependencyType, type);
-                success = false;
-                continue;
-            }
-            fieldInjInfo.Info.SetValue(instance, dependency);
-        }
-        foreach (var propInjInfo in objectInjectionInfo.PropertyInjectionInfo) {
-            if (!Dependencies.TryGetValue(propInjInfo.DependencyType, out var dependency)) {
-                if (delayedObject is not null)
-                    DelayedDependencyResolver.AddAwaitingTarget(delayedObject, type, propInjInfo.DependencyType);
-                else
-                    throw new DependencyNotRegisteredException(propInjInfo.DependencyType, type);
-                success = false;
-                continue;
-            }
-            argArr[0] = dependency;
-            propInjInfo.Setter.Invoke(instance, argArr);
-        }
-        return success;
+    /// <summary>
+    /// Attempts to resolve all dependencies of <paramref name="instance"/> <br/> <b>This method applies for the global scope</b>
+    /// </summary>
+    /// <param name="instance">The instance which dependecies should be resolved</param>
+    /// <returns>True if all dependencies were resolved successfuly</returns>
+    public static bool ResolveDependencies(object instance) =>
+        _globalScope.ResolveDependencies(instance);
+
+    /// <summary>
+    /// Creates a new empty dependency injection scope
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="fallbackToGlobalScope">Whenever to allow the created scope to also search the global scope for missing dependencies</param>
+    /// <returns>The created scope</returns>
+    /// <exception cref="DuplicitScopeIdException"></exception>
+    public static Scope CreateScope(string? id = null, bool fallbackToGlobalScope = true)
+    {
+        if (id is null)
+            id = Guid.NewGuid().ToString();
+        if (_scopes.ContainsKey(id))
+            throw new DuplicitScopeIdException(id);
+        var scope = new Scope(id, fallbackToGlobalScope? _globalScope : null);
+        _scopes.Add(id, scope);
+        return scope;
     }
+
+    /// <summary>
+    /// Get a scope by it's ID
+    /// </summary>
+    /// <param name="id"></param>
+    /// <exception cref="KeyNotFoundException"></exception>
+    public static Scope GetScope(string id)
+    {
+        if (!_scopes.ContainsKey(id))
+            throw new KeyNotFoundException($"Scope with id {id} does not exist");
+        return _scopes[id];
+    }
+
+    /// <summary>
+    /// Try to get a scope by it's id
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="scope"></param>
+    /// <returns>True if the scope exists</returns>
+    public static bool TryGetScope(string id,[NotNullWhen(true)] out Scope? scope) => _scopes.TryGetValue(id, out scope);
+
+    public static void DeleteScope(Scope scope) => _scopes.Remove(scope.Id);
 }

@@ -1,11 +1,26 @@
 ﻿using System;
+using System.Runtime.Serialization;
 
-namespace NokLib.DependencyInjection.Exceptions;
+namespace SimpleDI;
 
 [Serializable]
-public sealed class TypeAlreadyRegisteredException : ArgumentException
+public class SimpleDependencyInjectionException : Exception
 {
+    public SimpleDependencyInjectionException() { }
+
+    public SimpleDependencyInjectionException(string? message) : base(message) { }
+
+    public SimpleDependencyInjectionException(string? message, Exception? innerException) : base(message, innerException) { }
+
+    protected SimpleDependencyInjectionException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+}
+
+[Serializable]
+public sealed class TypeAlreadyRegisteredException : SimpleDependencyInjectionException
+{
+    public const string UnknownParameterName = "_Unknown_";
     public Type InstanceType { get; }
+    public string ParameterName { get; } = UnknownParameterName;
     public TypeAlreadyRegisteredException() : base() {
         InstanceType = typeof(object);
     }
@@ -14,25 +29,13 @@ public sealed class TypeAlreadyRegisteredException : ArgumentException
         InstanceType = instanceType;
     }
 
-    public TypeAlreadyRegisteredException(Type instanceType, string paramName) : base($"Instance of type {instanceType.FullName} from parameter {paramName} is already registered", paramName) {
-        InstanceType = instanceType;
-    }
-
-    public TypeAlreadyRegisteredException(Type instanceType, string message, Exception innerException) : base(message, innerException) {
-        InstanceType = instanceType;
-    }
-
-    public TypeAlreadyRegisteredException(Type instanceType, string message, string paramName) : base(message, paramName) {
-        InstanceType = instanceType;
-    }
-
-    public TypeAlreadyRegisteredException(Type instanceType, string message, string paramName, Exception innerException) : base(message, paramName, innerException) {
+    public TypeAlreadyRegisteredException(Type instanceType, string paramName) : base($"Instance of type {instanceType.FullName} from parameter {paramName} is already registered") {
         InstanceType = instanceType;
     }
 }
 
 [Serializable]
-public sealed class DependencyNotRegisteredException : Exception
+public sealed class DependencyNotRegisteredException : SimpleDependencyInjectionException
 {
     public Type DependencyType { get; }
     public Type InstanceType { get; }
@@ -44,11 +47,21 @@ public sealed class DependencyNotRegisteredException : Exception
 }
 
 [Serializable]
-public sealed class DITypeNotSupportedException : NotSupportedException
+public sealed class DITypeNotSupportedException : SimpleDependencyInjectionException
 {
     public Type InstanceType { get; }
 
     public DITypeNotSupportedException(Type instanceType) : base($"{nameof(DependencyInjector)} only supports class types, {instanceType.FullName} is not a class") {
         InstanceType = instanceType;
+    }
+}
+
+[Serializable]
+public sealed class DuplicitScopeIdException : SimpleDependencyInjectionException
+{
+    public string Id { get; }
+    public DuplicitScopeIdException(string id) : base($"A scope with ID {id} already exists")
+    {
+        Id = id;
     }
 }

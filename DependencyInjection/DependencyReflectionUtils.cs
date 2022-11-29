@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Reflection;
 
-namespace NokLib.DependencyInjection.Internal;
-public static class DependencyReflectionUtils
+namespace SimpleDI.Internal;
+internal static class DependencyReflectionUtils
 {
-    public static List<FieldInfo> GetInjectedFieldsOf(Type type) {
+    internal static List<FieldInfo> GetInjectedFieldsOf(Type type) {
         var fields = new List<FieldInfo>();
         foreach (var field in type.GetRuntimeFields()) {
             if (field.IsStatic || field.IsInitOnly || field.IsLiteral)
@@ -17,7 +17,7 @@ public static class DependencyReflectionUtils
         return fields;
     }
 
-    public static List<PropertyInfo> GetInjectedPropertiesOf(Type type) {
+    internal static List<PropertyInfo> GetInjectedPropertiesOf(Type type) {
         var props = new List<PropertyInfo>();
         foreach (var prop in type.GetRuntimeProperties()) {
             var injectAttr = prop.GetCustomAttribute<InjectAttribute>();
@@ -27,7 +27,7 @@ public static class DependencyReflectionUtils
         return props;
     }
 
-    public static (FieldInjectionInfo[], PropertyInjectionInfo[]) GenerateInjectionInfoForType(Type type) {
+    internal static ObjectInjectionInfo GenerateInjectionInfoForType(Type type) {
         var fieldInfo = new List<FieldInjectionInfo>();
         var propInfo = new List<PropertyInjectionInfo>();
         var injectedFields = GetInjectedFieldsOf(type);
@@ -36,6 +36,10 @@ public static class DependencyReflectionUtils
             fieldInfo.Add(new FieldInjectionInfo(field.FieldType, field));
         foreach (var prop in injectedProps)
             propInfo.Add(new PropertyInjectionInfo(prop.PropertyType, prop.GetSetMethod(true) ?? throw new MissingMethodException(type.FullName, prop.Name + ".get()")));
-        return (fieldInfo.ToArray(), propInfo.ToArray());
+        
+        var injectionInfo = new InjectionInfo[fieldInfo.Count + propInfo.Count];
+        fieldInfo.CopyTo((FieldInjectionInfo[])injectionInfo, 0);
+        propInfo.CopyTo((PropertyInjectionInfo[])injectionInfo, fieldInfo.Count);
+        return new ObjectInjectionInfo(injectionInfo);
     }
 }
