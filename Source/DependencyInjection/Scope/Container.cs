@@ -2,10 +2,16 @@
 using System.Collections.Generic;
 using SimpleDI.Internal;
 
-namespace SimpleDI.Scopes;
-public class Scope
+namespace SimpleDI.Containers;
+
+/// <summary>
+/// Similar in function to scopes in dependency injection, except that containers can be assigned a specific ID and then shared between objects by that ID.
+/// Essentially a scope that can be created by one object and then shared with a different one instead of both objects creating their own scope.
+/// Each container can optionally also fall back onto the global container, in case the required dependency is not present.
+/// </summary>
+public class Container
 {
-    private readonly Scope? _globalScope;
+    private readonly Container? _globalScope;
     private readonly Dictionary<Type, object> _dependencies = new();
     private readonly DelayedDependencyResolver _delayedDependencyResolver;
 
@@ -17,8 +23,10 @@ public class Scope
     /// If true, tries searching the global scope for dependencies as well, <br/> in case the dependency is not registered in the current scope
     /// </summary>
     public bool FallbackToGlobalScope => _globalScope is not null;
+    
+    public Container() : this(Guid.NewGuid().ToString(), null) { }
 
-    public Scope(string id, Scope? globalScope)
+    public Container(string id, Container? globalScope)
     {
         Id = id;
         _globalScope = globalScope;
@@ -42,8 +50,7 @@ public class Scope
 
     public bool ResolveDependencies(object instance)
     {
-        if (instance is null)
-            throw new ArgumentNullException();
+        ArgumentNullException.ThrowIfNull(instance);
 
         var type = instance.GetType();
         if (!type.IsClass)
@@ -66,7 +73,7 @@ public class Scope
                 success = false;
             }
             else
-                throw new DependencyNotRegisteredException(injectionInfo.DependencyType, type);
+                return false;
         }
         return success;
     }

@@ -1,16 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
-using SimpleDI.Scopes;
+using SimpleDI.Containers;
 
 namespace SimpleDI.Internal;
 
 internal sealed class DelayedDependencyResolver
 {
-    private readonly Scope _owner;
+    private readonly Container _owner;
     private readonly Dictionary<Type, DelayedTargetInfo> _waitingTargets = new();
     private readonly Dictionary<Type, HashSet<Type>> _waitingDependencies = new();
 
-    public DelayedDependencyResolver(Scope owner)
+    public DelayedDependencyResolver(Container owner)
     {
         _owner = owner;
     }

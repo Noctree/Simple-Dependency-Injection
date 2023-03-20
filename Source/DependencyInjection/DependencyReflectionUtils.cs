@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 
 namespace SimpleDI.Internal;
@@ -36,10 +37,7 @@ internal static class DependencyReflectionUtils
             fieldInfo.Add(new FieldInjectionInfo(field.FieldType, field));
         foreach (var prop in injectedProps)
             propInfo.Add(new PropertyInjectionInfo(prop.PropertyType, prop.GetSetMethod(true) ?? throw new MissingMethodException(type.FullName, prop.Name + ".get()")));
-        
-        var injectionInfo = new InjectionInfo[fieldInfo.Count + propInfo.Count];
-        fieldInfo.CopyTo((FieldInjectionInfo[])injectionInfo, 0);
-        propInfo.CopyTo((PropertyInjectionInfo[])injectionInfo, fieldInfo.Count);
-        return new ObjectInjectionInfo(injectionInfo);
+
+        return new ObjectInjectionInfo(fieldInfo.Cast<InjectionInfo>().Concat(propInfo.Cast<InjectionInfo>()).ToArray());
     }
 }

@@ -15,6 +15,7 @@
     <Authors>Matyáš Holub</Authors>
 	<OutputType>Library</OutputType>
 	<RootNamespace>SimpleDI</RootNamespace>
+	<LangVersion>latestmajor</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
