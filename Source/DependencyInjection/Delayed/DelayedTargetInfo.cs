@@ -2,4 +2,4 @@
 using System.Collections.Generic;
 
 namespace SimpleDI.Internal;
-internal record struct DelayedTargetInfo(HashSet<IDelayedDependencyInjection> Targets, HashSet<Type> Dependencies);
+internal record struct DelayedTargetInfo(HashSet<IDelayedDependencyInjection> Targets, Dictionary<Type, bool> Dependencies);

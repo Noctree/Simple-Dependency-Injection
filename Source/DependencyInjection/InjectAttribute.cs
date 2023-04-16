@@ -2,7 +2,7 @@
 
 namespace SimpleDI;
 
-[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
+[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = true)]
 public sealed class InjectAttribute : Attribute
 {
 }
